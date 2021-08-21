@@ -39,15 +39,15 @@ function Login() {
                 <div className="field mt-4">
                     <span className="p-float-label">
                         <Controller name="key1" control={control} render={({ field }) => (
-                            <InputText id={field.name} {...field} type="password" onKeyUp={(e) => e.key === 'Enter' && handleSubmit(confirmLogin)} autoFocus />
-                        )} />
+                            <InputText id={field.name} {...field} type="password" onKeyUp={(e) => e.key === 'Enter' && handleSubmit(confirmLogin)()} autoFocus />
+                        )}/>
                         <label htmlFor="key1">Key1</label>
                     </span>
                 </div>
                 <div className="field mt-4">
                     <span className="p-float-label">
                         <Controller name="key2" control={control} render={({ field }) => (
-                            <InputText id={field.name} {...field} type="password" onKeyUp={(e) => e.key === 'Enter' && handleSubmit(confirmLogin)} />
+                            <InputText id={field.name} {...field} type="password" onKeyUp={(e) => e.key === 'Enter' && handleSubmit(confirmLogin)()} />
                         )} />
                         <label htmlFor="key2">Key2</label>
                     </span>

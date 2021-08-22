@@ -21,9 +21,9 @@ function Login() {
     const confirmLogin = (data) => {
         const apiKey = keyService.encrypt(data.key1 + data.key2);
         localStorage.setItem('key', apiKey);
-    
+
         setDisplayModal(false);
-      }
+    }
 
     const renderFooter = () => {
         return (
@@ -34,13 +34,13 @@ function Login() {
     }
 
     return (
-        <Dialog header="Input Key" visible={displayModal} onHide={() => { setDisplayModal(false) }} modal={true} style={{ width: '25vw' }} draggable={false} resizable={false} footer={renderFooter}>
+        <Dialog header="Input Key" visible={displayModal} onHide={() => { setDisplayModal(false) }} modal={true} breakpoints={{ '960px': '75vw', '640px': '100vw' }} style={{ width: '50vw' }} draggable={false} resizable={false} footer={renderFooter}>
             <div className="card">
                 <div className="field mt-4">
                     <span className="p-float-label">
                         <Controller name="key1" control={control} render={({ field }) => (
                             <InputText id={field.name} {...field} type="password" onKeyUp={(e) => e.key === 'Enter' && handleSubmit(confirmLogin)()} autoFocus />
-                        )}/>
+                        )} />
                         <label htmlFor="key1">Key1</label>
                     </span>
                 </div>

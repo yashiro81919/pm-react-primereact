@@ -1,4 +1,5 @@
 const prod = {
+    production: true,
     keyName: 'X-API-KEY',
     baseURL: 'https://shitianyu.xyz/api',
     cryptoEndpoint: '/cryptos',
@@ -7,6 +8,7 @@ const prod = {
 };
 
 const dev = {
+    production: false,
     keyName: 'X-API-KEY',
     baseURL: 'http://localhost:60001/api',
     cryptoEndpoint: '/cryptos',

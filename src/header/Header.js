@@ -3,6 +3,7 @@ import logo from '../logo.svg';
 import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
 import Pack from '../../package.json';
+import config from '../config';
 
 
 function Header() {
@@ -45,7 +46,7 @@ function Header() {
                     <h1>{Pack.name}</h1>
                 </div>
                 <div className="col">
-                    <p className="text-right">Version {Pack.version}</p>
+                    <p className="text-right">Version: {config.production ? 'prd ' : 'dev '} {Pack.version}</p>
                 </div>
             </div>
         </div>

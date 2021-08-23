@@ -1,6 +1,6 @@
 {
   "name": "pm-react",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "frontend built by React and PrimeReact",
   "private": true,
   "dependencies": {

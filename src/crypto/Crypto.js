@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useReducer, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import NumberFormat from 'react-number-format';
 
@@ -14,41 +14,83 @@ import { classNames } from 'primereact/utils';
 
 import cryptoService from '../services/cryptoService';
 
+const initialState = {
+    cmcObjs: [],
+    cryptos: [],
+    total: 0,
+    filteredCmcs: []
+};
+
+function reducer(state, action) {
+    const data = action.payload;
+    switch (action.type) {
+        case 'loadCmc':
+            return { ...state, cmcObjs: action.payload };
+        case 'loadCrypto':
+            //merge cryto with cmc
+            data.forEach(crypto => {
+                const cmc = state.cmcObjs.find(cmc => cmc.cmcId === crypto.cmcId);
+                crypto.name = cmc?.name ? cmc.name : '';
+                crypto.price = cmc?.price ? cmc.price : 0;
+            });
+            return { ...state, cryptos: data };
+        case 'setTotal':
+            //calculate total
+            let currentTotal = 0;
+            state.cryptos.forEach(crypto => {
+                currentTotal += crypto.quantity * crypto.price;
+            });
+            return { ...state, total: currentTotal };
+        case 'filterCmc':
+            const cmcs = state.cmcObjs.filter(cmc => {
+                if (cmc.name.toLowerCase().includes(data.query.toLowerCase())) {
+                    return cmc;
+                }
+                return null;
+            });
+            return { ...state, filteredCmcs: cmcs };
+        default:
+            throw new Error();
+    }
+}
+
 function Crypto() {
 
     const toast = useRef(null);
 
-    const [cmcObjs, setCmcObjs] = useState([]);
-    const [cryptos, setCryptos] = useState([]);
-    const [total, setTotal] = useState(0);
     const [showSpinner, setShowSpinner] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [displayModal, setDisplayModal] = useState(false);
-    const [filteredCmcs, setFilteredCmcs] = useState([]);
+
+    const [state, dispatch] = useReducer(reducer, initialState);
+
+    const listCryptos = useCallback(
+        () => {
+            setShowSpinner(true);
+            cryptoService.listCryptos().then(data => {
+                dispatch({ type: 'loadCrypto', payload: data });
+                dispatch({ type: 'setTotal', payload: data });
+
+                setShowSpinner(false);
+            }).catch(error => {
+                toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
+                setShowSpinner(false);
+            });
+        },
+        []
+    );
 
     useEffect(() => {
-        setShowSpinner(true);
-
         //search cmc from coin market cap
-        listCmcs();
-    }, []);
-
-    useEffect(() => {
-        //search cryptos
-        listCryptos();
-    }, [cmcObjs]);
-
-    useEffect(() => {
-        //calculate total
-        let currentTotal = 0;
-
-        cryptos.forEach(crypto => {
-            currentTotal += crypto.quantity * crypto.price;
-        });
-        setTotal(currentTotal);
-
-        setShowSpinner(false);
-    }, [cryptos]);
+        setShowSpinner(true);
+        cryptoService.listCmcObjects().then(data => {
+            dispatch({ type: 'loadCmc', payload: data });
+            listCryptos();
+        }).catch(error => {
+            toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
+            setShowSpinner(false);
+        })
+    }, [listCryptos]);
 
     const defaultValues = {
         cmc: '',
@@ -56,7 +98,7 @@ function Crypto() {
         remark: ''
     }
 
-    const { control, formState: { errors }, handleSubmit, reset, setValue } = useForm({ defaultValues });
+    const { control, formState: { errors }, handleSubmit, reset, setValue, clearErrors } = useForm({ defaultValues });
 
     const cmcValidator = (value) => {
         const type = typeof value;
@@ -64,46 +106,13 @@ function Crypto() {
     }
 
     const filterCmc = (event) => {
-        const data = cmcObjs.filter(cmc => {
-            if (cmc.name.toLowerCase().includes(event.query.toLowerCase())) {
-                return cmc;
-            }
-            return null;
-        });
-        setFilteredCmcs(data);
-    }
-
-    const listCmcs = () => {
-        cryptoService.listCmcObjects().then(data => {
-            setCmcObjs(data);
-        }).catch(error => {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-            setShowSpinner(false);
-        });
-    }
-
-    const listCryptos = () => {
-        setShowSpinner(true);
-        cryptoService.listCryptos().then(data => {
-            //merge cryto with cmc
-            data.forEach(crypto => {
-                const cmc = cmcObjs.find(cmc => cmc.cmcId === crypto.cmcId);
-                crypto.name = cmc?.name ? cmc.name : '';
-                crypto.price = cmc?.price ? cmc.price : 0;
-            });
-
-            setCryptos(data);
-            setShowSpinner(false);
-        }).catch(error => {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-            setShowSpinner(false);
-        });
+        dispatch({ type: 'filterCmc', payload: event });
     }
 
     const openDialog = (crypto) => {
         if (crypto) {
             setIsEdit(true);
-            reset();
+            clearErrors();
             setValue('cmc', { cmcId: crypto.cmcId, name: crypto.name, price: crypto.price });
             setValue('quantity', crypto.quantity);
             if (crypto.remark !== null) {
@@ -187,9 +196,9 @@ function Crypto() {
             <Toast ref={toast} position="top-center"></Toast>
             <Button icon="pi pi-plus" className="p-button-rounded p-button-success p-button-text" onClick={(e) => openDialog(null)} autoFocus />
 
-            <p className="p-component">Total Price: <NumberFormat value={total} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} /></p>
+            <p className="p-component">Total Price: <NumberFormat value={state.total} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} /></p>
 
-            <DataTable value={cryptos} stripedRows loading={showSpinner} scrollable scrollHeight="800px">
+            <DataTable value={state.cryptos} stripedRows loading={showSpinner} scrollable scrollHeight="800px">
                 <Column header="" body={operationTemplate}></Column>
                 <Column field="cmcId" header="CMC ID"></Column>
                 <Column field="name" header="Name"></Column>
@@ -208,7 +217,7 @@ function Crypto() {
                     <div className="field mt-4">
                         <span className="p-float-label">
                             <Controller name="cmc" control={control} rules={{ required: 'CMC Object is required.', validate: cmcValidator }} render={({ field, fieldState }) => (
-                                <AutoComplete id={field.name} {...field} suggestions={filteredCmcs} completeMethod={filterCmc} field="name" itemTemplate={itemTemplate} className={classNames({ 'p-invalid': fieldState.invalid })} onKeyUp={(e) => e.key === 'Enter' && handleSubmit(submitChange)()} disabled={isEdit} autoFocus />
+                                <AutoComplete id={field.name} {...field} suggestions={state.filteredCmcs} completeMethod={filterCmc} field="name" itemTemplate={itemTemplate} className={classNames({ 'p-invalid': fieldState.invalid })} onKeyUp={(e) => e.key === 'Enter' && handleSubmit(submitChange)()} disabled={isEdit} autoFocus />
                             )} />
                             <label htmlFor="cmc" className={classNames({ 'p-error': errors.cmc })}>CMC Object*</label>
                         </span>

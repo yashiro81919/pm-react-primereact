@@ -29,7 +29,7 @@ function Key() {
         value: ''
     }
 
-    const { control, formState: { errors }, handleSubmit, reset, setValue } = useForm({ defaultValues });
+    const { control, formState: { errors }, handleSubmit, reset, setValue, clearErrors } = useForm({ defaultValues });
 
     const searchKeys = () => {
         setShowSpinner(true);
@@ -46,7 +46,7 @@ function Key() {
     const openDialog = (key) => {
         if (key) {
             setIsEdit(true);
-            reset();
+            clearErrors();
             setValue('name', key.name);
             setValue('key', key.key);
             setValue('value', key.value);

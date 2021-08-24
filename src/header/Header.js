@@ -30,7 +30,7 @@ function Header() {
 
     return (
         <div>
-            <div className="grid bg-indigo-700">
+            <div className="grid bg-indigo-700 text-white">
                 <div className="col">
                     <div className="grid">
                         <div className="col-12">

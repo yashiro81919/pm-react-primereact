@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useReducer } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 
 import { Toast } from 'primereact/toast';
@@ -12,16 +12,34 @@ import { classNames } from 'primereact/utils';
 
 import keyService from '../services/keyService';
 
+const initialState = {
+    keys: [],
+    showSpinner: false
+};
+
+function reducer(state, action) {
+    const data = action.payload;
+    switch (action.type) {
+        case 'startLoading':
+            return { ...state, showSpinner: true };
+        case 'endLoading':
+            return { ...state, showSpinner: false };
+        case 'loadKey':
+            return { ...state, keys: data, showSpinner: false };
+        default:
+            throw new Error();
+    }
+}
 
 function Key() {
 
     const toast = useRef(null);
 
-    const [keys, setKeys] = useState([]);
     const [filter, setFilter] = useState('');
-    const [showSpinner, setShowSpinner] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [displayModal, setDisplayModal] = useState(false);
+
+    const [state, dispatch] = useReducer(reducer, initialState);
 
     const defaultValues = {
         name: '',
@@ -32,14 +50,13 @@ function Key() {
     const { control, formState: { errors }, handleSubmit, reset, setValue, clearErrors } = useForm({ defaultValues });
 
     const searchKeys = () => {
-        setShowSpinner(true);
+        dispatch({ type: 'startLoading' });
 
         keyService.searchKeys(filter).then(data => {
-            setKeys(data);
-            setShowSpinner(false);
+            dispatch({ type: 'loadKey', payload: data });
         }).catch(error => {
             toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-            setShowSpinner(false);
+            dispatch({ type: 'endLoading' });
         });
     }
 
@@ -122,7 +139,7 @@ function Key() {
                 <Button icon="pi pi-plus" className="p-button-rounded p-button-success p-button-text ml-2" onClick={(e) => openDialog(null)} />
             </div>
 
-            <DataTable value={keys} stripedRows loading={showSpinner} scrollable scrollHeight="800px">
+            <DataTable value={state.keys} stripedRows loading={state.showSpinner} scrollable scrollHeight="800px">
                 <Column header="" body={operationTemplate}></Column>
                 <Column field="name" header="Name"></Column>
                 <Column field="key" header="Key"></Column>

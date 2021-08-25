@@ -18,14 +18,19 @@ const initialState = {
     cmcObjs: [],
     cryptos: [],
     total: 0,
-    filteredCmcs: []
+    filteredCmcs: [],
+    showSpinner: false
 };
 
 function reducer(state, action) {
     const data = action.payload;
     switch (action.type) {
+        case 'startLoading':
+            return { ...state, showSpinner: true };
+        case 'endLoading':
+            return { ...state, showSpinner: false };
         case 'loadCmc':
-            return { ...state, cmcObjs: action.payload };
+            return { ...state, cmcObjs: data };
         case 'loadCrypto':
             //merge cryto with cmc
             data.forEach(crypto => {
@@ -33,14 +38,12 @@ function reducer(state, action) {
                 crypto.name = cmc?.name ? cmc.name : '';
                 crypto.price = cmc?.price ? cmc.price : 0;
             });
-            return { ...state, cryptos: data };
-        case 'setTotal':
             //calculate total
             let currentTotal = 0;
-            state.cryptos.forEach(crypto => {
+            data.forEach(crypto => {
                 currentTotal += crypto.quantity * crypto.price;
             });
-            return { ...state, total: currentTotal };
+            return { ...state, cryptos: data, total: currentTotal, showSpinner: false };
         case 'filterCmc':
             const cmcs = state.cmcObjs.filter(cmc => {
                 if (cmc.name.toLowerCase().includes(data.query.toLowerCase())) {
@@ -58,7 +61,6 @@ function Crypto() {
 
     const toast = useRef(null);
 
-    const [showSpinner, setShowSpinner] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [displayModal, setDisplayModal] = useState(false);
 
@@ -66,15 +68,12 @@ function Crypto() {
 
     const listCryptos = useCallback(
         () => {
-            setShowSpinner(true);
+            dispatch({ type: 'startLoading' });
             cryptoService.listCryptos().then(data => {
                 dispatch({ type: 'loadCrypto', payload: data });
-                dispatch({ type: 'setTotal', payload: data });
-
-                setShowSpinner(false);
             }).catch(error => {
                 toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-                setShowSpinner(false);
+                dispatch({ type: 'endLoading' });
             });
         },
         []
@@ -82,13 +81,13 @@ function Crypto() {
 
     useEffect(() => {
         //search cmc from coin market cap
-        setShowSpinner(true);
+        dispatch({ type: 'startLoading' });
         cryptoService.listCmcObjects().then(data => {
             dispatch({ type: 'loadCmc', payload: data });
             listCryptos();
         }).catch(error => {
             toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-            setShowSpinner(false);
+            dispatch({ type: 'endLoading' });
         })
     }, [listCryptos]);
 
@@ -198,7 +197,7 @@ function Crypto() {
 
             <p className="p-component">Total Price: <NumberFormat value={state.total} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} /></p>
 
-            <DataTable value={state.cryptos} stripedRows loading={showSpinner} scrollable scrollHeight="800px">
+            <DataTable value={state.cryptos} stripedRows loading={state.showSpinner} scrollable scrollHeight="800px">
                 <Column header="" body={operationTemplate}></Column>
                 <Column field="cmcId" header="CMC ID"></Column>
                 <Column field="name" header="Name"></Column>

@@ -1,1 +1,0 @@
-($env:REACT_APP_STAGE = "prod") -and (npm run build)

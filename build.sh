@@ -1,1 +1,0 @@
-REACT_APP_STAGE=prod npm run build

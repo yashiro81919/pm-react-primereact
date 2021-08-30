@@ -29,6 +29,13 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
+Build for prod on different platforms:
+Windows:
+($env:REACT_APP_STAGE = "prod") -and (npm run build)
+
+Linux && Mac:
+REACT_APP_STAGE=prod npm run build
+
 ### `npm run eject`
 
 **Note: this is a one-way operation. Once you `eject`, you can’t go back!**

@@ -1,1 +1,1 @@
-REACT_APP_STAGE=prod npm run-script build
+REACT_APP_STAGE=prod npm run build

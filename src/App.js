@@ -6,6 +6,7 @@ import Crypto from './crypto/Crypto';
 import Key from './key/Key';
 import Login from './login/Login';
 import React, { useEffect } from 'react';
+import Pack from '../package.json';
 
 function App() {
 
@@ -20,7 +21,7 @@ function App() {
           <Headers></Headers>
         </div>
         <div className="col-12 h-full">
-          <HashRouter>
+          <HashRouter basename={Pack.homepage}>
             <Route path='/crypto' component={Crypto} />
             <Route path='/key' component={Key} />
           </HashRouter>

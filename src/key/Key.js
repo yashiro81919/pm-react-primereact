@@ -135,7 +135,7 @@ function Key() {
         <React.Fragment>
             <Toast ref={toast} position="top-center"></Toast>
             <div className="p-component">
-                Name search: <InputText onChange={(e) => setFilter(e.target.value)} onKeyUp={(e) => e.key === 'Enter' && searchKeys()} onBlur={searchKeys} />
+                Name search: <InputText onChange={(e) => setFilter(e.target.value)} onKeyUp={(e) => e.key === 'Enter' && searchKeys()}/>
                 <Button icon="pi pi-plus" className="p-button-rounded p-button-success p-button-text ml-2" onClick={(e) => openDialog(null)} />
             </div>
 

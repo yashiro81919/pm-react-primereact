@@ -19,7 +19,7 @@ class CryptoService {
     listCryptos() {
         return API.get(this.url).then((resp) => {
             return resp.data.map(row => {
-                return { cmcId: row.cmc_id, quantity: row.quantity, remark: row.remark, name: '', price: 0 };
+                return { cmcId: row.cmcId, quantity: row.quantity, remark: row.remark, name: '', price: 0 };
             });
         });
     }
@@ -29,12 +29,12 @@ class CryptoService {
     }
 
     addCrypto(crypto) {
-        const body = { cmc_id: crypto.cmcId, quantity: crypto.quantity, remark: crypto.remark };
+        const body = { cmcId: crypto.cmcId, quantity: crypto.quantity, remark: crypto.remark };
         return API.post(this.url, body);
     }
 
     updateCrypto(crypto) {
-        const body = { cmc_id: crypto.cmcId, quantity: crypto.quantity, remark: crypto.remark };
+        const body = { cmcId: crypto.cmcId, quantity: crypto.quantity, remark: crypto.remark };
         return API.put(this.url, body);
     }
 }

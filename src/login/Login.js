@@ -5,8 +5,6 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 
-import keyService from '../services/keyService';
-
 function Login() {
 
     const [displayModal, setDisplayModal] = useState(true);
@@ -19,7 +17,7 @@ function Login() {
     const { control, handleSubmit } = useForm({ defaultValues });
 
     const confirmLogin = (data) => {
-        const apiKey = keyService.encrypt(data.key1 + data.key2);
+        const apiKey = data.key1 + data.key2;
         localStorage.setItem('key', apiKey);
 
         setDisplayModal(false);

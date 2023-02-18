@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
-import logo from '../logo.svg';
+import logo from '../../logo.svg';
 import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
-import Pack from '../../package.json';
-import config from '../config';
+import Pack from '../../../package.json';
+import config from '../../config';
 
 
 function Header() {
@@ -16,14 +16,14 @@ function Header() {
             label: 'Crypto',
             icon: 'pi pi-dollar',
             command: (e) => {
-                window.location.hash = "/crypto"
+                window.location.hash = '/crypto'
             }
         },
         {
             label: 'Key',
             icon: 'pi pi-key',
             command: (e) => {
-                window.location.hash = "/key"
+                window.location.hash = '/key'
             }
         }]
     }];

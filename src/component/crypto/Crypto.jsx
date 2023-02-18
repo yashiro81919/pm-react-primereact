@@ -1,95 +1,66 @@
-import React, { useState, useEffect, useRef, useReducer, useCallback } from 'react';
+import React, { useEffect, useReducer, useContext } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import NumberFormat from 'react-number-format';
+import { NumericFormat } from 'react-number-format';
 
-import { Toast } from 'primereact/toast';
 import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { confirmPopup } from 'primereact/confirmpopup';
+import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
 import { Dialog } from 'primereact/dialog';
 import { AutoComplete } from 'primereact/autocomplete';
 import { classNames } from 'primereact/utils';
 
-import cryptoService from '../services/cryptoService';
-
-const initialState = {
-    cmcObjs: [],
-    cryptos: [],
-    total: 0,
-    filteredCmcs: [],
-    showSpinner: false
-};
-
-function reducer(state, action) {
-    const data = action.payload;
-    switch (action.type) {
-        case 'startLoading':
-            return { ...state, showSpinner: true };
-        case 'endLoading':
-            return { ...state, showSpinner: false };
-        case 'loadCmc':
-            return { ...state, cmcObjs: data };
-        case 'loadCrypto':
-            //merge cryto with cmc
-            data.forEach(crypto => {
-                const cmc = state.cmcObjs.find(cmc => cmc.cmcId === crypto.cmcId);
-                crypto.name = cmc?.name ? cmc.name : '';
-                crypto.price = cmc?.price ? cmc.price : 0;
-            });
-            //calculate total
-            let currentTotal = 0;
-            data.forEach(crypto => {
-                currentTotal += crypto.quantity * crypto.price;
-            });
-            return { ...state, cryptos: data, total: currentTotal, showSpinner: false };
-        case 'filterCmc':
-            const cmcs = state.cmcObjs.filter(cmc => {
-                if (cmc.name.toLowerCase().includes(data.query.toLowerCase())) {
-                    return cmc;
-                }
-                return null;
-            });
-            return { ...state, filteredCmcs: cmcs };
-        default:
-            throw new Error();
-    }
-}
+import * as cryptoAdapter from '../../adapters/CryptoAdapter';
+import { Context } from '../../context';
+import { ACTION_TYPE, reducer, initialState } from './CryptoReducer';
 
 function Crypto() {
 
-    const toast = useRef(null);
+    const toast = useContext(Context);
 
-    const [isEdit, setIsEdit] = useState(false);
-    const [displayModal, setDisplayModal] = useState(false);
-
-    const [state, dispatch] = useReducer(reducer, initialState);
-
-    const listCryptos = useCallback(
-        () => {
-            dispatch({ type: 'startLoading' });
-            cryptoService.listCryptos().then(data => {
-                dispatch({ type: 'loadCrypto', payload: data });
-            }).catch(error => {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-                dispatch({ type: 'endLoading' });
-            });
-        },
-        []
-    );
+    const [state, dispatch] = useReducer(reducer, initialState);  
 
     useEffect(() => {
         //search cmc from coin market cap
-        dispatch({ type: 'startLoading' });
-        cryptoService.listCmcObjects().then(data => {
-            dispatch({ type: 'loadCmc', payload: data });
-            listCryptos();
+        dispatch({ type: ACTION_TYPE.START_SEARCH });
+        cryptoAdapter.listCmcObjects().then(data => {
+            return cryptoAdapter.listCryptos().then(cryptos => {
+                const payload = mergeCrypto(cryptos, data);  
+                dispatch({ type: ACTION_TYPE.END_SEARCH, payload: payload });
+            }); 
         }).catch(error => {
             toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
-            dispatch({ type: 'endLoading' });
+            dispatch({ type: ACTION_TYPE.END_SEARCH, payload: {cryptos: [], total: 0, cmcObjs: []} });
         })
-    }, [listCryptos]);
+    }, [toast]);
+
+    const listCryptos = () => {
+        dispatch({ type: ACTION_TYPE.START_SEARCH });
+
+        cryptoAdapter.listCryptos().then(data => {
+            const payload = mergeCrypto(data, state.cmcObjs);               
+            dispatch({ type: ACTION_TYPE.END_SEARCH, payload: payload });
+        }).catch(error => {
+            toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
+            dispatch({ type: ACTION_TYPE.END_SEARCH, payload: {cryptos: [], total: 0, cmcObjs: state.cmcObjs} });
+        });
+    };    
+    
+    const mergeCrypto = (cryptos, cmcObjs) => {
+        //merge cryto with cmc
+        cryptos.forEach(crypto => {
+            const cmc = cmcObjs.find(cmc => cmc.cmcId === crypto.cmcId);
+            crypto.name = cmc?.name ? cmc.name : '';
+            crypto.price = cmc?.price ? cmc.price : 0;
+        });
+        //calculate total
+        let currentTotal = 0;
+        cryptos.forEach(crypto => {
+            currentTotal += crypto.quantity * crypto.price;
+        });
+        return {cryptos: cryptos, total: currentTotal, cmcObjs: cmcObjs };           
+    } 
 
     const defaultValues = {
         cmc: '',
@@ -105,41 +76,46 @@ function Crypto() {
     }
 
     const filterCmc = (event) => {
-        dispatch({ type: 'filterCmc', payload: event });
+        const filteredCmcs = state.cmcObjs.filter(cmc => {
+            if (cmc.name.toLowerCase().includes(event.query.toLowerCase())) {
+                return cmc;
+            }
+            return null;
+        });        
+        dispatch({ type: ACTION_TYPE.FILTER_CMCS, payload: {filteredCmcs: filteredCmcs} });
     }
 
     const openDialog = (crypto) => {
         if (crypto) {
-            setIsEdit(true);
             clearErrors();
             setValue('cmc', { cmcId: crypto.cmcId, name: crypto.name, price: crypto.price });
             setValue('quantity', crypto.quantity);
             if (crypto.remark !== null) {
                 setValue('remark', crypto.remark);
             }
+            dispatch({ type: ACTION_TYPE.SHOW_DIALOG, payload: {isEdit: true} });
         } else {
-            setIsEdit(false);
             reset();
+            dispatch({ type: ACTION_TYPE.SHOW_DIALOG, payload: {isEdit: false} });
         }
-        setDisplayModal(true);
     }
 
     const submitChange = (data) => {
         const cryptoObject = { cmcId: data?.cmc?.cmcId, name: '', price: 0, quantity: data?.quantity, remark: data?.remark };
-        if (isEdit) {
-            cryptoService.updateCrypto(cryptoObject).then(() => {
+        if (state.isEdit) {
+            cryptoAdapter.updateCrypto(cryptoObject).then(() => {
                 listCryptos();
             }).catch(error => {
                 toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
             });
         } else {
-            cryptoService.addCrypto(cryptoObject).then(() => {
+            cryptoAdapter.addCrypto(cryptoObject).then(() => {
                 listCryptos();
             }).catch(error => {
                 toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
             });
         }
-        setDisplayModal(false);
+        dispatch({ type: ACTION_TYPE.HIDE_DIALOG });
     }
 
     const confirmDialog = (e, cmcId) => {
@@ -149,7 +125,7 @@ function Crypto() {
             icon: 'pi pi-exclamation-triangle',
             acceptClassName: 'p-button-danger',
             accept: () => {
-                cryptoService.deleteCrypto(cmcId).then(() => {
+                cryptoAdapter.deleteCrypto(cmcId).then(() => {
                     listCryptos();
                 }).catch(error => {
                     toast.current.show({ severity: 'error', summary: 'Error', detail: error.message });
@@ -172,7 +148,7 @@ function Crypto() {
         return (
             <React.Fragment>
                 <Button label="Yes" className="p-button-outlined p-button-success" disabled={false} onClick={handleSubmit(submitChange)} />
-                <Button label="No" className="p-button-outlined p-button-danger" onClick={() => { setDisplayModal(false) }} />
+                <Button label="No" className="p-button-outlined p-button-danger" onClick={() => { dispatch({type: ACTION_TYPE.HIDE_DIALOG}) }} />
             </React.Fragment>
         );
     }
@@ -192,10 +168,10 @@ function Crypto() {
 
     return (
         <React.Fragment>
-            <Toast ref={toast} position="top-center"></Toast>
+            <ConfirmPopup />
             <Button icon="pi pi-plus" className="p-button-rounded p-button-success p-button-text" onClick={(e) => openDialog(null)} autoFocus />
 
-            <p className="p-component">Total Price: <NumberFormat value={state.total} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} /></p>
+            <p className="p-component">Total Price: <NumericFormat value={state.total} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} /></p>
 
             <DataTable value={state.cryptos} stripedRows loading={state.showSpinner} scrollable scrollHeight="800px">
                 <Column header="" body={operationTemplate}></Column>
@@ -203,20 +179,20 @@ function Crypto() {
                 <Column field="name" header="Name"></Column>
                 <Column field="quantity" header="Quantity"></Column>
                 <Column header="Price" body={(rowData) => {
-                    return <NumberFormat value={rowData.price} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} />
+                    return <NumericFormat value={rowData.price} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} />
                 }}></Column>
                 <Column header="Total" body={(rowData) => {
-                    return <NumberFormat value={rowData.quantity * rowData.price} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} />
+                    return <NumericFormat value={rowData.quantity * rowData.price} displayType={'text'} thousandSeparator={true} prefix={'$'} decimalScale={2} />
                 }}></Column>
                 <Column field="remark" header="Remark"></Column>
             </DataTable>
 
-            <Dialog header={isEdit ? 'Update Crypto' : 'Add Crypto'} visible={displayModal} onHide={() => { setDisplayModal(false) }} modal={true} breakpoints={{ '960px': '75vw', '640px': '100vw' }} style={{ width: '50vw' }} draggable={false} resizable={false} footer={renderFooter}>
+            <Dialog header={state.isEdit ? 'Update Crypto' : 'Add Crypto'} visible={state.displayModal} onHide={() => { dispatch({type: ACTION_TYPE.HIDE_DIALOG}) }} modal={true} breakpoints={{ '960px': '75vw', '640px': '100vw' }} style={{ width: '50vw' }} draggable={false} resizable={false} footer={renderFooter}>
                 <div className="card">
                     <div className="field mt-4">
                         <span className="p-float-label">
                             <Controller name="cmc" control={control} rules={{ required: 'CMC Object is required.', validate: cmcValidator }} render={({ field, fieldState }) => (
-                                <AutoComplete id={field.name} {...field} suggestions={state.filteredCmcs} completeMethod={filterCmc} field="name" itemTemplate={itemTemplate} className={classNames({ 'p-invalid': fieldState.invalid })} onKeyUp={(e) => e.key === 'Enter' && handleSubmit(submitChange)()} disabled={isEdit} autoFocus />
+                                <AutoComplete id={field.name} {...field} suggestions={state.filteredCmcs} completeMethod={filterCmc} field="name" itemTemplate={itemTemplate} className={classNames({ 'p-invalid': fieldState.invalid })} onKeyUp={(e) => e.key === 'Enter' && handleSubmit(submitChange)()} disabled={state.isEdit} autoFocus />
                             )} />
                             <label htmlFor="cmc" className={classNames({ 'p-error': errors.cmc })}>CMC Object*</label>
                         </span>

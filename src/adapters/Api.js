@@ -7,7 +7,7 @@ const instance = axios.create({
 });
 
 instance.interceptors.request.use(function (config) {
-  const authToken = localStorage.getItem('key');
+  const authToken = localStorage.getItem('token');
   config.headers[env.keyName] = authToken !== null ? authToken : '';
   return config;
 });

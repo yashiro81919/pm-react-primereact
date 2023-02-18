@@ -5,6 +5,7 @@ const prod = {
     cryptoEndpoint: '/cryptos',
     keyEndpoint: '/keys',
     cmcEndpoint: '/cmcs',
+    loginEndpoint: '/login',
 };
 
 const dev = {
@@ -14,6 +15,7 @@ const dev = {
     cryptoEndpoint: '/cryptos',
     keyEndpoint: '/keys',
     cmcEndpoint: '/cmcs',
+    loginEndpoint: '/login',
 };
 
 const config = process.env.REACT_APP_STAGE === 'prod' ? prod : dev;

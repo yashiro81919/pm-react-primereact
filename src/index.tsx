@@ -3,8 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { createHashRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 import App from './App';
-import Crypto from './component/crypto/Crypto';
-import Key from './component/key/Key';
+import CryptoComponent from './component/crypto/Crypto';
+import KeyComponent from './component/key/Key';
 
 const router = createHashRouter([
     {
@@ -12,15 +12,15 @@ const router = createHashRouter([
         element: <App/>,
         children : [ {
             path: '/crypto',
-            element: <Crypto/>,
+            element: <CryptoComponent/>,
         }, {
             path: '/key',
-            element: <Key/>,            
+            element: <KeyComponent/>,            
         }]
     }
 ]);
 
-const container = document.getElementById('root');
+const container = document.getElementById('root')!;
 const root = createRoot(container);
 root.render(
     <React.StrictMode>

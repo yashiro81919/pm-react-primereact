@@ -12,7 +12,7 @@ export const initialState = {
     isEdit: false
 };
 
-export function reducer(state, action) {
+export function reducer(state: any, action: any) {
     switch (action.type) {
         case ACTION_TYPE.START_SEARCH:           
             return { ...state, showSpinner: true };

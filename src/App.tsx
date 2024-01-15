@@ -1,16 +1,16 @@
 import './App.css';
 import { Outlet } from 'react-router-dom';
-import Footer from './component/footer/Footer';
-import Headers from './component/header/Header';
-import Login from './component/login/Login';
+import FooterComponent from './component/footer/Footer';
+import HeaderComponent from './component/header/Header';
+import LoginComponent from './component/login/Login';
 import React, { useEffect, useRef } from 'react';
 
 import { Toast } from 'primereact/toast';
 import { Context } from './context';
 
-function App() {
+const App = () => {
 
-  const toast = useRef(null);
+  const toast = useRef<any>(null);
 
   useEffect(() => {
     console.log('clear localStorage');
@@ -23,16 +23,16 @@ function App() {
       <Context.Provider value={toast}>
         <div className="grid">
           <div className="col-12">
-            <Headers></Headers>
+            <HeaderComponent></HeaderComponent>
           </div>
-          <div className="col-12 h-full">
+          <div className="col-12 h-full p-component shadow-2">
             <Outlet/>
           </div>
           <div className="col-12">
-            <Footer></Footer>
+            <FooterComponent></FooterComponent>
           </div>
         </div>
-        <Login></Login>
+        <LoginComponent></LoginComponent>
       </Context.Provider>
     </React.Fragment>
   )

@@ -8,7 +8,7 @@ const instance = axios.create({
 
 instance.interceptors.request.use(function (config) {
   const authToken = localStorage.getItem('token');
-  config.headers[env.keyName] = authToken !== null ? authToken : '';
+  config.headers[env.keyName] = authToken ? 'Bearer ' + authToken : '';
   return config;
 });
 

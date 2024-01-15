@@ -7,12 +7,13 @@ import { Dialog } from 'primereact/dialog';
 
 import * as loginAdapter from '../../adapters/LoginAdapter';
 import { Context } from '../../context';
+import { User } from '../../models/user';
 
-function Login() {
+const LoginComponent = () => {
 
-    const [displayModal, setDisplayModal] = useState(true);
+    const [displayModal, setDisplayModal] = useState<boolean>(true);
 
-    const toast = useContext(Context);
+    const toast = useContext<any>(Context);
 
     const defaultValues = {
         name: '',
@@ -21,7 +22,7 @@ function Login() {
 
     const { control, handleSubmit } = useForm({ defaultValues });
 
-    const confirmLogin = (user) => {
+    const confirmLogin = (user: User) => {
         loginAdapter.login(user).then(d => {
             if (d.data === '') {
                 toast.current.show({ severity: 'error', summary: 'Error', detail: 'Wrong user name/password.' });
@@ -36,14 +37,12 @@ function Login() {
 
     const renderFooter = () => {
         return (
-            <React.Fragment>
-                <Button label="Yes" className="p-button-outlined p-button-success" onClick={handleSubmit(confirmLogin)} />
-            </React.Fragment>
+            <Button icon="pi pi-arrow-right" title="login" label="Login" rounded text raised onClick={handleSubmit(confirmLogin)}/>
         );
     }
 
     return (
-        <Dialog header="Log in to your account" visible={displayModal} modal={true} breakpoints={{ '960px': '75vw', '640px': '100vw' }} style={{ width: '50vw' }} draggable={false} resizable={false} closable={false} footer={renderFooter}>
+        <Dialog header="Log in to your account" visible={displayModal} modal={true} breakpoints={{ '960px': '75vw', '640px': '100vw' }} style={{ width: '50vw' }} draggable={false} resizable={false} closable={false} footer={renderFooter} onHide={() => setDisplayModal(false)}>
             <div className="card">
                 <div className="field mt-4">
                     <span className="p-float-label">
@@ -66,4 +65,4 @@ function Login() {
     );
 }
 
-export default Login
+export default LoginComponent

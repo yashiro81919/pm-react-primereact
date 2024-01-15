@@ -5,19 +5,21 @@ import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
-import { ConfirmPopup, confirmPopup } from 'primereact/confirmpopup';
+import { ConfirmDialog } from 'primereact/confirmdialog'; // For <ConfirmDialog /> component
+import { confirmDialog } from 'primereact/confirmdialog'; // For confirmDialog method
 import { Dialog } from 'primereact/dialog';
 import { classNames } from 'primereact/utils';
 
 import * as keyAdapter from '../../adapters/KeyAdapter';
 import { Context } from '../../context';
 import { ACTION_TYPE, reducer, initialState } from './KeyReducer';
+import { Key } from '../../models/key';
 
-function Key() {
+const KeyComponent = () => {
 
-    const toast = useContext(Context);
+    const toast = useContext<any>(Context);
 
-    const filter = useRef(null);
+    const filter = useRef<any>(null);
 
     const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -40,7 +42,7 @@ function Key() {
         });
     }
     
-    const openDialog = (key) => {
+    const openDialog = (key: Key | null) => {
         if (key) {
             clearErrors();
             setValue('name', key.name);
@@ -53,7 +55,7 @@ function Key() {
         }
     }    
 
-    const submitChange = (data) => {
+    const submitChange = (data: Key) => {
         if (state.isEdit) {
             keyAdapter.updateKey(data).then(() => {
                 searchKeys();
@@ -70,12 +72,13 @@ function Key() {
         dispatch({ type: ACTION_TYPE.HIDE_DIALOG });
     }
 
-    const confirmDialog = (e, name) => {
-        confirmPopup({
-            target: e.currentTarget,
-            message: 'Are you sure to delete?',
+    const confirmDelete = (e: any, name: string) => {
+        confirmDialog({
+            message: `Are you sure to delete "${name}"?`,
+            header: 'Delete Confirmation',
             icon: 'pi pi-exclamation-triangle',
-            acceptClassName: 'p-button-danger',
+            acceptClassName:"p-button-danger p-button-outlined p-button-rounded",
+            rejectClassName:"p-button-text p-button-outlined p-button-rounded",
             accept: () => {
                 keyAdapter.deleteKey(name).then(() => {
                     searchKeys();
@@ -87,11 +90,11 @@ function Key() {
         });
     }
 
-    const operationTemplate = (rowData) => {
+    const operationTemplate = (rowData: Key) => {
         return (
             <React.Fragment>
-                <Button icon="pi pi-pencil" className="p-button-rounded p-button-primary p-button-text" onClick={(e) => openDialog(rowData)} />
-                <Button icon="pi pi-trash" className="p-button-outlined p-button-danger p-button-text" onClick={(e) => confirmDialog(e, rowData.name)} />
+                <Button className="ml-2" icon="pi pi-pencil" title="update key" rounded text raised severity="info" onClick={(e) => openDialog(rowData)} />
+                {rowData.name !== 'cmc-key' && <Button className="ml-2" icon="pi pi-trash" title="delete key" rounded text raised severity="danger" onClick={(e) => confirmDelete(e, rowData.name)} />}
             </React.Fragment>
         );
     }
@@ -99,25 +102,22 @@ function Key() {
     const renderFooter = () => {
         return (
             <React.Fragment>
-                <Button label="Yes" className="p-button-outlined p-button-success" onClick={handleSubmit(submitChange)} />
-                <Button label="No" className="p-button-outlined p-button-danger" onClick={() => {dispatch({type: ACTION_TYPE.HIDE_DIALOG})}} />
+                <Button className="ml-2" icon="pi pi-check" title="Yes" label="Yes" rounded text raised severity="success" onClick={handleSubmit(submitChange)} />
+                <Button className="ml-2" icon="pi pi-times" title="No" label="No" rounded text raised severity="danger" onClick={() => {dispatch({type: ACTION_TYPE.HIDE_DIALOG})}} />
             </React.Fragment>
         );
     }
 
-    const getFormErrorMessage = (name) => {
-        return errors[name] && <small className="p-error">{errors[name].message}</small>;
-    };
-
     return (
         <React.Fragment>
-            <ConfirmPopup />
-            <div className="p-component">
-                Name search: <InputText ref={filter} onKeyUp={(e) => e.key === 'Enter' && searchKeys()}/>
-                <Button icon="pi pi-plus" className="p-button-rounded p-button-success p-button-text ml-2" onClick={(e) => openDialog(null)} />
+            <ConfirmDialog />
+            <div className="mb-4">
+                <InputText aria-label="search key" placeholder="Search Name" type="text" ref={filter} onKeyUp={(e) => e.key === 'Enter' && searchKeys()}/>
+                <Button className="ml-2" icon="pi pi-search" title="search key" rounded text raised onClick={(e) => searchKeys()}/>
+                <Button className="ml-2" icon="pi pi-plus" title="add key" rounded text raised severity="success" onClick={(e) => openDialog(null)}/>
             </div>
 
-            <DataTable value={state.keys} stripedRows loading={state.showSpinner} scrollable scrollHeight="800px">
+            <DataTable value={state.keys} stripedRows loading={state.showSpinner} scrollable paginator rows={5}>
                 <Column header="" body={operationTemplate}></Column>
                 <Column field="name" header="Name"></Column>
                 <Column field="key" header="Key"></Column>
@@ -133,7 +133,7 @@ function Key() {
                             )} />
                             <label htmlFor="name" className={classNames({ 'p-error': errors.name })}>Site Name*</label>
                         </span>
-                        {getFormErrorMessage('name')}
+                        {errors.name && <small className="p-error">{errors.name.message}</small>}
                     </div>
                     <div className="field mt-4">
                         <span className="p-float-label">
@@ -142,7 +142,7 @@ function Key() {
                             )} />
                             <label htmlFor="key" className={classNames({ 'p-error': errors.key })}>Key*</label>
                         </span>
-                        {getFormErrorMessage('key')}
+                        {errors.key && <small className="p-error">{errors.key.message}</small>}
                     </div>
                     <div className="field mt-4">
                         <span className="p-float-label">
@@ -151,7 +151,7 @@ function Key() {
                             )} />
                             <label htmlFor="value" className={classNames({ 'p-error': errors.value })}>Value*</label>
                         </span>
-                        {getFormErrorMessage('value')}
+                        {errors.value && <small className="p-error">{errors.value.message}</small>}
                     </div>
                 </div>
             </Dialog>
@@ -159,4 +159,4 @@ function Key() {
     );
 }
 
-export default Key
+export default KeyComponent
